@@ -51,17 +51,17 @@ class Simulation:
         self.r_reduced = np.linspace(0,self.L_reduced, self.N_reduced)
         self.dr_reduced = self.L_reduced / (self.N_reduced)
         # self.fr_reduced = np.linspace(0, 1 / (2 * self.dr_reduced), self.N_reduced) / self.scale_kr
-        self.fr_reduced = np.linspace(0, 2.2 * self.cut_off, self.N_reduced)
+        self.fr_reduced = np.linspace(0, 1.2 * self.cut_off, self.N_reduced)
         self.kr_reduced = 2 * np.pi * self.fr_reduced
     
     def compute_psf(self,
                     z_offset: float) -> np.ndarray:
         
-        psf_summed = np.zeros(self.N_reduced,dtype=np.complex128)
+        psf_summed = np.zeros(self.N_reduced, dtype=np.complex128)
         
         for i in range(len(self.spec.spectrum_range)):
-            propagated_field = prop(self.zp.profile_transform,z_offset,self.spec.spectrum_range[i],self.dr,self.zp.kr)
-            psf_single = iHT(self.zp.r / self.scale_real,propagated_field,self.zp.kr,self.fac)
+            propagated_field = prop(self.zp.profile_transform, z_offset, self.spec.spectrum_range[i], self.dr, self.zp.kr)
+            psf_single = iHT(self.zp.r / self.scale_real, propagated_field, self.zp.kr, self.fac)
             psf_summed +=  self.spec.profile[i] * abs(psf_single) ** 2
             
         return psf_summed

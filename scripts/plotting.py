@@ -24,12 +24,15 @@ def configure_plotting():
 
 def plot_mtf_curves(frequencies, curves, Y_vals, filename, linestyle_list):
     fig, ax = plt.subplots()
-    ax.set_xlabel(r"$f/f_{\mathrm{cutoff}}$")
+    ax.set_xlabel(r"$\nu/\nu_{\mathrm{c}}$")
     ax.set_ylabel("modulation")
-    # ax.set_xlim(0, 2.2)
+    ax.set_xlim(0, 1.1)
 
     for curve, ls in zip(curves, linestyle_list):
-        ax.plot(frequencies, curve, ls)
+        if type(ls) == str:
+            ax.plot(frequencies, curve, ls,markersize = 3)
+        else:
+            ax.plot(frequencies, curve, 'k',linestyle = ls)
 
     labels = [f"{y:.2f}" for y in Y_vals]
     ax.legend(labels, title="Y values", loc="upper right")
@@ -37,12 +40,31 @@ def plot_mtf_curves(frequencies, curves, Y_vals, filename, linestyle_list):
     fig.tight_layout()
     plt.show()
     fig.savefig(filename)
+    
+
+def plot_mtf_curves_flc(frequencies, curves, Y_vals, filename, linestyle_list):
+    fig, ax = plt.subplots()
+    ax.set_xlabel(r"$\nu/\nu_{\mathrm{cutoff}}$")
+    ax.set_ylabel("modulation")
+    # ax.set_xlim(0, 2.2)
+
+    for curve, ls in zip(curves, linestyle_list):
+        if type(ls) == str:
+            ax.plot(frequencies, curve, ls,markersize = 3)
+        else:
+            ax.plot(frequencies, curve, 'k',linestyle = ls)
+
+    labels = [f"{y:.2f}" for y in Y_vals]
+    ax.legend(labels, title="Y values", loc="upper right")
+    ax.grid(True)
+    fig.tight_layout()
+    # plt.show()
+    fig.savefig(filename)
 
 def plot_fractions(NZ_BW, curves,y_label, labels, filename,linestyle):
     fig, ax = plt.subplots()
-    ax.set_xlabel(r"$f/f_{\mathrm{cutoff}}$")
+    ax.set_xlabel("Y")
     ax.set_ylabel(y_label)
-    # ax.set_xlim(0, 2.2)
 
     for curve, ls in zip(curves, linestyle):
         ax.plot(NZ_BW, curve, ls)

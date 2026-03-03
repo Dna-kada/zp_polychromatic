@@ -12,28 +12,27 @@ class ZonePlate:
     
     @property
     def focal_length(self) -> float:
-        return self.radius ** 2 / (self.n_zones * self.lamda)
-    
-    @property 
-    def first_null(self) -> float:
-        return self.radius / self.n_zones 
-    
-    @property
-    def cut_off_freq(self) -> float:
-        return 1/self.first_null
+        return (self.radius**2 - (self.n_zones * self.lamda / 2)**2) / (self.n_zones * self.lamda)
     
     @property
     def NA(self) -> float:
         return np.sin( np.arctan(self.radius / self.focal_length))
     
+    @property 
+    def first_null(self) -> float:
+        return 0.61 * self.lamda / self.NA
+    
+    @property
+    def cut_off_freq(self) -> float:
+        return 2 * self.NA / self.lamda
+    
     @property
     def dr_min(self) -> float:
         return self.lamda / (2 * self.NA)
     
-    
     @property
     def DOF(self) -> float:
-        return self.lamda / self.NA ** 2
+        return 0.5 * self.lamda / self.NA ** 2
     
     
     @property
@@ -46,15 +45,15 @@ class ZonePlate:
         radii = np.array(radii)
         radii = self.radius * radii / np.max(radii)
 
-        for i in range(0, len(radii), 2):
-            for q in range(len(self.r)):
-                if radii[i - 1] <= abs(self.r[q]) <= radii[i]:
-                    h[q] *= np.exp(-1j * np.pi)
+        for i in range(1, len(radii), 2):
+            in_ring = (np.abs(self.r) >= radii[i-1]) & (np.abs(self.r) <= radii[i])
+            h[in_ring] *= -1.0  # amplitude ZP
+
         
         ap1 = (self.r < radii[-1]) # zero outside of the zone plate 
-        ap2 = (self.r > radii[1]) # central block
+        # ap2 = (self.r > radii[1]) # central block
         
-        return h * ap1 * ap2
+        return h * ap1 #* ap2
     
     @property
     def rads(self) -> np.ndarray:
@@ -70,12 +69,13 @@ class ZonePlate:
     def profile_transform(self) -> np.ndarray:
         return HT(self.r,self.profile,self.kr)
 
-@dataclass(slots=True)
+@dataclass()
 class Spectrum:
     lamda0: float
     Y: float
     n_zones: float
-    no_points: float = 15
+    no_points: float = 19
+    dlamda_mult = 3
     
     @property
     def FWHM(self):
@@ -83,18 +83,45 @@ class Spectrum:
     
     @property
     def dlamda(self) -> float:
-        return self.FWHM / 2.3548
+        return self.FWHM / (2 * np.sqrt(2 * np.log(2)))
     
     @property
     def spec_range(self) -> float:
-        return self.dlamda * 3
+        return self.dlamda * self.dlamda_mult
+    
+    
+    @property 
+    def spectrum_range(self) -> np.ndarray:
+        
+        return np.linspace(self.lamda0 - self.spec_range, self.lamda0 + self.spec_range, self.no_points)
+    @property 
+    def profile(self) -> np.ndarray:
+        if self.Y == 0:
+            t = 3 / 50 # this value is just used to create a range, it just has to be non-zero
+            spec = np.linspace(self.lamda0 - self.lamda0 * t, self.lamda0 + self.lamda0 * t, self.no_points)
+            return np.exp( - ((spec - self.lamda0) ** 2) / (2 * (self.lamda0 / 50) ** 2))
+        else:
+            return np.exp( - ((self.spectrum_range - self.lamda0) ** 2) / (2 * self.dlamda ** 2))
+
+
+@dataclass
+class Spectrum_flc:
+    lamda0: float
+    FWHM: float
+    no_points: float = 15
+    dlamda_mult = 3
+    
+    @property
+    def dlamda(self) -> float:
+        return self.FWHM / (2 * np.sqrt(2 * np.log(2)))
+    
+    @property
+    def spec_range(self) -> float:
+        return self.dlamda * self.dlamda_mult
     
     @property
     def zeta(self) -> float:
-        if self.FWHM == 0:
-            return "monochromatic"
-        else:
-            return self.lamda0 / self.FWHM
+        return self.lamda0 / self.FWHM
     
     
     @property 
@@ -102,8 +129,5 @@ class Spectrum:
         return np.linspace(self.lamda0 - self.spec_range, self.lamda0 + self.spec_range, self.no_points)
     @property 
     def profile(self) -> np.ndarray:
-        if self.zeta == "monochromatic":
-            return np.ones(len(self.spectrum_range))
-        else:
-            return np.exp( - ((self.spectrum_range - self.lamda0) ** 2) / (2 * self.dlamda ** 2))
+        return np.exp( - ((self.spectrum_range - self.lamda0) ** 2) / (2 * self.dlamda ** 2))
         

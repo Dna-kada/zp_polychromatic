@@ -22,7 +22,6 @@ def find_cutoff(freq, MTFs, thresholds):
 
 def DOF_poly_PSFs(z,peaks):
     zl = len(z)
-    Ys = len(peaks)
     foc_rec = np.linspace(z[zl // 2], z[-1], 1000, endpoint=True)
     foc_rec2 = (np.linspace(z[0], z[zl // 2], 1000, endpoint=True))
     f_p = CubicSpline(z, peaks)
@@ -41,5 +40,5 @@ def DOF_poly_PSFs(z,peaks):
             DOF2 = np.flip(foc_rec2)[0] - (np.flip(foc_rec2)[k - 1] + np.flip(foc_rec2)[k]) / 2
             break
 
-    return DOF1 + DOF2
+    return  (DOF1 + DOF2) / 2
     

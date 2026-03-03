@@ -12,19 +12,6 @@ import matplotlib as mpl
 from scripts.plotting import configure_plotting, plot_mtf_curves, plot_fractions
 from scripts.compute_curves import find_cutoff, DOF_poly_PSFs
 
-def sort(n,t):
-    """
-    n - number of processors
-    t - number of tasks
-    Sort the number of tasks.
-    """
-    td = t//n # the number of tasks per processor
-    r = t%n # should be the leftover tasks
-    l = td*np.ones(n) # make an array for the allegation of tasks
-    for i in range(r): # for loop to add the extra tasks to some processors
-        l[i] = l[i] + 1
-    return l
-
 def main():
     """
     description:
@@ -45,13 +32,12 @@ def main():
     size = comm.Get_size()
     
     lamda = 2.73e-9 # wavelength (not lambda for obvious reasons)
-    n_zones = 70 # number of zones for the zone plate
+    n_zones = 160 # number of zones for the zone plate
     #the res factor could be higher but it's more than adequate at this number.
-    resolution_factor = 25 # this is simply a rule of thumb
+    resolution_factor = 30 # this is simply a rule of thumb
     N = n_zones*resolution_factor # number of samples
     #the quantity being invsetigated
-    Y_values = np.array([0,0.8,*np.arange(1,6.5,0.5)])
-    # Y = 0 is treated as monochromatic, but in theory undefined
+    Y_values = np.array([0, 0.8, 1., 1.25, 1.5, 1.875, 2., 2.5, 3., 3.5, 4., 4.5, 5. ])
     
     mod_val = [0.05, 0.1, 0.15] # modulation cut-offs to measure
     
@@ -74,6 +60,9 @@ def main():
     # Only rank 0 constructs the ZonePlate and spectra
     if rank == 0:
         zp = ZonePlate(r, n_zones, lamda, zp_radius, kr) # generate FZP
+        print(f"Zone plate focal length:{zp.focal_length}")
+        print(f"Zone plate dr min:{zp.dr_min}")
+        print(f"Zone plate DOF:{zp.DOF}")
     else:
         zp = None
         spectra = None
@@ -82,9 +71,9 @@ def main():
     zp = comm.bcast(zp, root=0) # pass FZP to other cores
     
     delta_z = (0.5 * lamda / (zp.NA ** 2)) # factor for zones 
-    DOF_mono = 2 * delta_z # monochromatic DOF
-    mult = 4 # multiple of 'DOF_mono's to measure over
-    DOF_points = 17 # samples for DOF
+    DOF_mono = delta_z # monochromatic DOF # 2 * 
+    mult = 4.5 # multiple of 'DOF_mono's to measure over
+    DOF_points = 19 # samples for DOF
     focal_lower = zp.focal_length - mult * delta_z
     focal_upper = zp.focal_length + mult * delta_z
     # define the range on the z-axis 
@@ -99,7 +88,7 @@ def main():
     res_local_MTF = []
     res_local_PSF = []
     for y in Y_local:
-        spec = Spectrum(lamda,y,n_zones)
+        spec = Spectrum(lamda, y, n_zones)
         sim = Simulation(zp,
                          spec,
                          N,
@@ -118,24 +107,23 @@ def main():
         np.savez_compressed(f"results_MTF_{y:.2f}_nz_{n_zones}",a = sim.kr_reduced, b = results_local_MTF, c = y)
         np.savez_compressed(f"results_PSF_{y:.2f}_nz_{n_zones}",a = sim.kr_reduced, b = results_local_PSF, c = y)
         
+        
     all_results_MTF = comm.gather(res_local_MTF, root = 0)
     all_results_PSF = comm.gather(res_local_PSF, root = 0)
     if rank == 0:
         flat_results_MTF = np.array([item for sublist in all_results_MTF for item in sublist])
         flat_results_PSF = np.array([item for sublist in all_results_PSF for item in sublist])
-        print(np.shape(flat_results_PSF))
-        
         
         configure_plotting()
         
         # load combined results from MPI gather...
         freq = sim.fr_reduced / zp.cut_off_freq
-        DOF_mid = len(z_vals)//2
+        DOF_mid = len(z_vals) // 2
         Ys = len(Y_values)
         
         # select a few Y values
-        sel = np.array([0,2,5,9,12],dtype = np.int16)
-        thresholds = [0.05, 0.10, 0.15]
+        sel = np.array([0, 2, 5, 8, 12], dtype = np.int16)
+        thresholds = [0.05, 0.10, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
         # out-of-focus curves
         oof_curves = np.array([flat_results_MTF[i][0] for i in range(Ys)])
         # in-focus curves
@@ -144,98 +132,180 @@ def main():
         inf_PSF =  np.array([flat_results_PSF[i][DOF_mid] for i in range(Ys)])
         
         # save data
-        np.savez("mtf_data.npz", freq=freq, Y=Y_values,
-                 oof=np.stack(oof_curves), inf=np.stack(inf_curves))
+        # np.savez("mtf_data.npz", freq=freq, Y=Y_values,
+        #          oof=np.stack(oof_curves), inf=np.stack(inf_curves))
         
         # plotting
-        linestyles = ["k-", "k:", "k--", "k-."]
+        linestyles = ["k-", "k:", "k--", "k-.", (0, (3, 5, 1, 5)), (0, (5, 5)), (0, (3, 5, 1, 5, 1, 5))]
+        
+        
         plot_mtf_curves(freq, oof_curves[sel], Y_values[sel],
-                        "oof_MTF.png", linestyles)
+                        r"J:\PhD resources\Thesis\images\oof_MTF.pdf", linestyles)
         plot_mtf_curves(freq, inf_curves[sel], Y_values[sel],
-                        "MTF_in_focus.png", linestyles)
+                        r"J:\PhD resources\Thesis\images\MTF_in_focus.pdf", linestyles)
         
         
         
         cut_offs = find_cutoff(sim.fr_reduced, inf_curves,thresholds).T
         
         #%%
-        Res = 0.61*np.sqrt(zp.radius * 2 *zp.dr_min*Y_values[1:]/n_zones)
-        l = ['kd-','k-.','k--']
+        Res = 0.61 * np.sqrt(zp.radius * 2 * zp.dr_min * Y_values[1:] / n_zones)
         plt.figure()
-        plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
+        # plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
         for v in [1]: 
-            plt.plot(Y_values,cut_offs[v]/cut_offs[v][0],linestyles[v],markersize=5)
-        plt.xlabel("Y"); plt.ylabel(r"$f/f_{mono}$")
-        plt.ylim(0.4,1.05); plt.xlim(1,6)
+            plt.plot(Y_values, cut_offs[v] / cut_offs[v][0], linestyles[v], markersize = 5)
+        plt.xlabel("Y"); plt.ylabel(r"$\nu/\nu_{m}$")
+        # plt.ylim(0.4,1.05); plt.xlim(1,6)
         plt.grid()
-        plt.legend(["Analytic","5%","10%","15%"])
+        plt.legend(["10%"])
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
         plt.tight_layout()
-        plt.savefig("const_r_demonstration.png")
+        plt.savefig(r"J:\PhD resources\Thesis\images\const_r_demonstration.pdf")
+        plt.show()
+        
+        
+        val_mono = cut_offs[1][0]
+        
+        
+        plt.figure()
+        # plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
+        plt.plot(Y_values, cut_offs[1] / val_mono, linestyles[1])
+        plt.xlabel("$Y$"); plt.ylabel(r"$\frac{\nu_p}{\nu_{m}}$")
+        plt.rc("xtick", direction="in", top=True)
+        plt.rc("ytick", direction="in", right=True)
+        plt.tight_layout(); plt.grid()
+        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction.pdf")
+        plt.show()
+        
+        m = np.sum(Y_values ** 2 * ((val_mono / cut_offs[1]) ** 2 - 1)) / np.sum((Y_values ** 2) ** 2)
+        print("Frequency slope value:")
+        print(m)
+
+        plt.figure()
+        # plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
+        plt.plot((Y_values) ** 2, (val_mono / cut_offs[1]) ** 2, linestyles[2], markersize = 5)
+        plt.plot((Y_values) ** 2, m * (Y_values) ** 2 + 1)
+        plt.xlabel("$Y^2$"); plt.ylabel(r"$\left(\frac{\nu_{m}}{\nu_p}\right)^2$")
+        plt.grid()
+        plt.rc("xtick", direction="in", top=True)
+        plt.rc("ytick", direction="in", right=True)
+        plt.legend(["simulated","fitted"])
+        plt.tight_layout()
+        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction_one_curves.pdf")
+        plt.show()
+        
+        val_mono_half = cut_offs[3][0]
+        m1 = np.sum(Y_values**2 * ((val_mono_half/cut_offs[3])**2 - 1)) / np.sum((Y_values**2)**2)
+        print("Frequency slope value half:")
+        print(m1)
+        
+        plt.figure()
+        # plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
+        plt.plot((Y_values)**2,(val_mono_half/cut_offs[3])**2,linestyles[2],markersize=5)
+        plt.plot((Y_values)**2,m1*(Y_values)**2 + 1)
+        plt.xlabel("$Y^2$"); plt.ylabel(r"$\left(\frac{\nu_{m}}{\nu_p}\right)^2$")
+        plt.grid()
+        plt.rc("xtick", direction="in", top=True)
+        plt.rc("ytick", direction="in", right=True)
+        plt.legend(["simulated","fitted"])
+        plt.tight_layout()
+        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction_half.pdf")
+        plt.show()
+        
+        
+        mss = []
+        for i in cut_offs:
+            mss.append(np.sum(Y_values**2 * (i[0]/i)**2 - 1)/ np.sum((Y_values**2)**2))
+        plt.figure()
+        
+        # plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
+        plt.plot(thresholds,mss,linestyles[2],markersize=5)
+        plt.ylabel("$Slopes$"); plt.xlabel(r"$Thresholds$")
+        plt.grid()
+        plt.rc("xtick", direction="in", top=True)
+        plt.rc("ytick", direction="in", right=True)
+        plt.legend(["simulated","fitted"])
+        plt.tight_layout()
+        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction_vals.pdf")
         plt.show()
         
         
         #%%
         
-        bw = n_zones
-        NZ = bw*Y_values
-        val_mono = cut_offs[1][0]
-        mono_curve = Y_values# * val_mono
-        
-        labels = ['monochromatic','polychromatic']
-        # plot_fractions(Y_values, 
-        #                [cut_offs[1]/val_mono],
-        #                [],
-        #                r"$f/f_{Y \rightarrow 0}$",
-        #                "cut_off_reduction.png",
-        #                linestyles[:2])
-        plot_fractions(Y_values,
-                       [mono_curve,Y_values*cut_offs[1]/val_mono],
-                       r"$f/f_{Y = 1}$",
-                       labels,
-                       "increasing_N_res.png",
-                       linestyles[:2])
-        
-        #%%
-        
-        
+        # Compute values for DOF
         DOF_poly = []
+        peaks_cen = []
+        peaks_tot = []
         for i in range(Ys):
             peaks = flat_results_PSF[i][:,0]
+            peaks_tot.append(peaks)
+            peaks_cen.append(np.max(abs(peaks)))
             DOF_poly.append(DOF_poly_PSFs(z_vals, peaks))
         DOF_poly = np.array(DOF_poly)
+        pc = np.array(peaks_cen)
         
-        plot_fractions(Y_values, 
-                       [DOF_poly/DOF_mono],
-                       r"$\frac{DOF_{poly}}{DOF_{mono}}$",
-                       [],
-                       "DOF_poly.png",
-                       linestyles[:2])
-        # plot_fractions(Y_values, 
-        #                [Y_values,Y_values*DOF_mono/DOF_poly],
-        #                r"$\frac{DOF(Y=1)}{DOF(Y)}$",
-        #                labels,
-        #                "increasing_N_DOF.png",
-        #                linestyles[:2])
-        
+        #Compute values for Peak Intenity
         plt.figure()
-        plt.xlabel("Y")
-        plt.ylabel(r"$\frac{DOF(Y=1)}{DOF(Y)}$")
-        inv_DOF = NZ/(2 * zp.radius*np.sqrt(8*lamda))
-        inv_DOF_norm = NZ[2]/(2 * zp.radius*np.sqrt(8*lamda))
-        plt.plot(Y_values,inv_DOF/inv_DOF_norm,'k') 
-        plt.plot(Y_values,(DOF_mono/DOF_poly)*inv_DOF/inv_DOF_norm,'k-.')
-        plt.legend(["monochromatic","polychromatic"])
-        plt.grid()
+        for i in range(Ys):
+            plt.plot(peaks_tot[i]/np.max(peaks_tot[i]))
+        plt.xlabel("z"); plt.ylabel("intensity")
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
-        plt.tight_layout()
-        plt.savefig("increasing_DOF_inv.png")
+        plt.tight_layout();plt.grid()
+        plt.savefig(r"J:\PhD resources\Thesis\images\z_plots.pdf")
         plt.show()
         
         
-
+        
+        # Plot DOF ratio vs Y
+        plt.figure()
+        plt.xlabel(r"$Y$"); plt.ylabel(r"$\frac{\Delta z_{p}}{\Delta z_{m}}$")
+        plt.rc("xtick", direction="in", top=True)
+        plt.rc("ytick", direction="in", right=True)
+        plt.plot(Y_values,DOF_poly / DOF_mono,'kd-')
+        plt.tight_layout();plt.grid()
+        plt.savefig(r"J:\PhD resources\Thesis\images\DOF_poly.pdf")
+        plt.show()
+        
+        #Plot DOF ratio ^2 vs Y^2
+        p = np.polyfit((Y_values) ** 2, ((DOF_poly / DOF_mono)) ** 2, 1)
+        rrr = np.corrcoef((Y_values) ** 2, ((DOF_poly / DOF_mono)) ** 2)
+        print("DOF fit values:")
+        print(p)
+        print(rrr)
+        plt.figure()
+        plt.xlabel(r"$Y^2$"); plt.ylabel(r"$\frac{\Delta z_{p}}{\Delta z_{m}}$")
+        plt.rc("xtick", direction="in", top=True)
+        plt.rc("ytick", direction="in", right=True)
+        plt.plot((Y_values) ** 2,((DOF_poly / DOF_mono)) ** 2,'kd-')
+        plt.plot((Y_values) ** 2, p[0] * (Y_values) ** 2 + p[1])
+        plt.legend(["Simulated","Fitted"])
+        plt.tight_layout();plt.grid()
+        plt.savefig(r"J:\PhD resources\Thesis\images\DOF_poly_square.pdf")
+        plt.show()
+        
+        
+        
+        # Plot inverse peak intensity vs Y^2
+        p= np.polyfit((Y_values) ** 2, pc[0] ** 2 / pc ** 2, 1)
+        rrr = np.corrcoef((Y_values) ** 2, pc[0] ** 2 / pc ** 2)
+        print("peak int fit values:")
+        print(p)
+        print(rrr)
+        plt.figure()
+        plt.xlabel(r"$Y^2$")
+        plt.ylabel(r"$\left(\frac{I_m}{I_p}\right)^2$")
+        plt.rc("xtick", direction="in", top=True)
+        plt.rc("ytick", direction="in", right=True)
+        plt.plot((Y_values) ** 2, pc[0]**2 / pc ** 2,'kd-')
+        plt.plot((Y_values) ** 2, p[0] * (Y_values) ** 2 + p[1])
+        plt.legend(["Simulated","Fitted"])
+        plt.tight_layout();plt.grid()
+        plt.savefig(r"J:\PhD resources\Thesis\images\peak_int.pdf")
+        plt.show()
+        
+        
 
 if __name__ == '__main__':
     main()
