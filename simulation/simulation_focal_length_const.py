@@ -52,7 +52,7 @@ class Simulation:
         self.r_reduced = np.linspace(0,self.L_reduced, self.N_reduced)
         self.dr_reduced = self.L_reduced / (self.N_reduced)
         # self.fr_reduced = np.linspace(0, 1 / (2 * self.dr_reduced), self.N_reduced) / self.scale_kr
-        self.fr_reduced = np.linspace(0, 1.2 * self.cut_off, self.N_reduced)
+        self.fr_reduced = np.linspace(0, 1.05 * self.cut_off, self.N_reduced)
         self.kr_reduced = 2 * np.pi * self.fr_reduced
     
     def compute_psf(self,

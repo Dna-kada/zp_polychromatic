@@ -12,7 +12,7 @@ um = 1e-6
 nm = 1e-9 
 
 lamda = 2.73e-9 # wavelength (not lambda for obvious reasons)
-n_zones = 900 # number of zones for the zone plate
+n_zones = 200 # number of zones for the zone plate
 #the res factor could be higher but it's more than adequate at this number.
 resolution_factor = 30 # this is simply a rule of thumb
 N = n_zones * resolution_factor # number of samples
@@ -32,6 +32,9 @@ scale = 20 # scale down the physical space for producing PSF
 
 
 zp_radius = 126e-6 #/ 2 # radius of zone plate
+zp_focal_length = (zp_radius**2 - (n_zones * lamda / 2)**2) / (n_zones * lamda)
+NA = np.sin( np.arctan(zp_radius / zp_focal_length))
+cut_off_freq = 2 * NA / lamda
 L = zp_radius / field_fraction # total length of field
 r = np.linspace(0, L, N) # real space array
 dr = L/N # increment in real space

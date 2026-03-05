@@ -11,12 +11,13 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scripts.plotting import configure_plotting, plot_mtf_curves_flc, plot_fractions
 from scripts.compute_curves import find_cutoff, DOF_poly_PSFs
+from params.par_const_foc import *
 
 def main():
     """
     description:
         The computation first defines the field, the zone plate, and the 
-        simulation that prdouces the data. The sampling is quite high at first
+        simulation that produces the data. The sampling is quite high at first
         and then is reduced to reduce the run time. The largest part of the run
         time is using a very basic method of computing the Hankel transform
         which can't be vectorised for large number of zones (memory issues)
@@ -155,12 +156,12 @@ def main():
         # plotting
         linestyles = ["k-", "k:", "k--", "k-.",(0, (3, 5, 1, 5)), (0, (5, 5)), (0, (3, 5, 1, 5, 1, 5))]
         plot_mtf_curves_flc(freq, oof_curves[sel], Y_values[sel],
-                        r"J:\PhD resources\Thesis\images\oof_MTF_const_foc.pdf", linestyles)
+                        "oof_MTF_const_foc.pdf", linestyles)
         
         plt.figure()
         plt.plot(freq)
         plot_mtf_curves_flc(freq, inf_curves[sel], Y_values[sel],
-                        r"J:\PhD resources\Thesis\images\MTF_in_focus_const_foc.pdf", linestyles)
+                        "MTF_in_focus_const_foc.pdf", linestyles)
         
         
         
@@ -185,7 +186,7 @@ def main():
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\const_r_demonstration_const_foc.pdf")
+        plt.savefig("const_r_demonstration_const_foc.pdf")
         # plt.show()
         
         
@@ -201,7 +202,7 @@ def main():
                        [cut_offs[1] / cut_offs[1][7]],
                        r"$\nu/\nu_{Y = 3.3}$",
                        [],
-                       r"J:\PhD resources\Thesis\images\cut_off_reduction_const_foc.pdf",
+                       "cut_off_reduction_const_foc.pdf",
                        linestyles[:2])
         
         #%%
@@ -236,7 +237,7 @@ def main():
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
         plt.tight_layout()
-        plt.savefig("z_plots_const_foc.png")
+        plt.savefig("z_plots_const_foc.pdf")
         
         plt.figure()
         plt.xlabel(r"$Y^2$")
@@ -246,13 +247,13 @@ def main():
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\DOF_poly_square_const_foc.pdf")
+        plt.savefig("DOF_poly_square_const_foc.pdf")
         
         plot_fractions(Y_values, 
                        [DOF_poly / (focal_length / ( 3.52 * zeta))],
                        r"$\frac{\Delta z_p}{f/(3.52 \, \zeta)}$",
                        [],
-                       r"J:\PhD resources\Thesis\images\DOF_poly_const_foc.pdf",
+                       "DOF_poly_const_foc.pdf",
                        linestyles[:2])
         
         
@@ -262,7 +263,7 @@ def main():
         plt.rc("ytick", direction="in", right=True)
         plt.plot(Y_values ** 2, pc[0] / pc)
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\peak_int_const_foc_norm.pdf")
+        plt.savefig("peak_int_const_foc_norm.pdf")
         
         plt.figure()
         plt.xlabel(r"$Y^2$"); plt.ylabel(r"$\left(\frac{I_m}{I_p}\right)^2$")
@@ -270,17 +271,17 @@ def main():
         plt.rc("ytick", direction="in", right=True)
         plt.plot(Y_values ** 2, pc[0] ** 2 / pc ** 2)
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\peak_int_const_square_foc_norm.pdf")
+        plt.savefig("peak_int_const_square_foc_norm.pdf")
         
         
         
         plt.figure()
-        plt.xlabel("Y"); plt.ylabel(r"$\frac{I_p}{(3.52 \, \zeta / f)}$")
+        plt.xlabel("Y"); plt.ylabel(r"$\frac{I_p}{(\zeta / f)}$")
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
-        plt.plot(Y_values, pc * focal_length / (3.52 * zeta), 'kd-')
+        plt.plot(Y_values, pc * focal_length / zeta, 'kd-')
         plt.tight_layout(); plt.grid()
-        plt.savefig(r"J:\PhD resources\Thesis\images\peak_int_const_foc.pdf")
+        plt.savefig("peak_int_const_foc.pdf")
         plt.show()
         
 

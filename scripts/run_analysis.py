@@ -32,9 +32,9 @@ def main():
     size = comm.Get_size()
     
     lamda = 2.73e-9 # wavelength (not lambda for obvious reasons)
-    n_zones = 160 # number of zones for the zone plate
+    n_zones = 900 # number of zones for the zone plate
     #the res factor could be higher but it's more than adequate at this number.
-    resolution_factor = 30 # this is simply a rule of thumb
+    resolution_factor = 25 # this is simply a rule of thumb
     N = n_zones*resolution_factor # number of samples
     #the quantity being invsetigated
     Y_values = np.array([0, 0.8, 1., 1.25, 1.5, 1.875, 2., 2.5, 3., 3.5, 4., 4.5, 5. ])
@@ -46,7 +46,7 @@ def main():
     field_fraction = 0.3 
     scale = 20 # scale down the physical space for producing PSF
     
-    zp_radius = 126e-6 #/ 2 # radius of zone plate
+    zp_radius = 126e-6 / 2 # radius of zone plate
     L = zp_radius / field_fraction # total length of field
     r = np.linspace(0, L, N) # real space array
     dr = L/N # increment in real space
@@ -71,7 +71,7 @@ def main():
     zp = comm.bcast(zp, root=0) # pass FZP to other cores
     
     delta_z = (0.5 * lamda / (zp.NA ** 2)) # factor for zones 
-    DOF_mono = delta_z # monochromatic DOF # 2 * 
+    DOF_mono = delta_z # monochromatic DOF
     mult = 4.5 # multiple of 'DOF_mono's to measure over
     DOF_points = 19 # samples for DOF
     focal_lower = zp.focal_length - mult * delta_z
@@ -140,33 +140,27 @@ def main():
         
         
         plot_mtf_curves(freq, oof_curves[sel], Y_values[sel],
-                        r"J:\PhD resources\Thesis\images\oof_MTF.pdf", linestyles)
+                        "oof_MTF.pdf", linestyles)
         plot_mtf_curves(freq, inf_curves[sel], Y_values[sel],
-                        r"J:\PhD resources\Thesis\images\MTF_in_focus.pdf", linestyles)
+                        "MTF_in_focus.pdf", linestyles)
         
         
         
         cut_offs = find_cutoff(sim.fr_reduced, inf_curves,thresholds).T
         
-        #%%
-        Res = 0.61 * np.sqrt(zp.radius * 2 * zp.dr_min * Y_values[1:] / n_zones)
         plt.figure()
-        # plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
         for v in [1]: 
             plt.plot(Y_values, cut_offs[v] / cut_offs[v][0], linestyles[v], markersize = 5)
         plt.xlabel("Y"); plt.ylabel(r"$\nu/\nu_{m}$")
-        # plt.ylim(0.4,1.05); plt.xlim(1,6)
         plt.grid()
         plt.legend(["10%"])
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\const_r_demonstration.pdf")
+        plt.savefig("const_r_demonstration.pdf")
         plt.show()
         
-        
         val_mono = cut_offs[1][0]
-        
         
         plt.figure()
         # plt.plot(Y_values[1:],1.22*zp.dr_min/Res,'k')
@@ -175,7 +169,7 @@ def main():
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
         plt.tight_layout(); plt.grid()
-        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction.pdf")
+        plt.savefig("cut_off_reduction.pdf")
         plt.show()
         
         m = np.sum(Y_values ** 2 * ((val_mono / cut_offs[1]) ** 2 - 1)) / np.sum((Y_values ** 2) ** 2)
@@ -192,7 +186,7 @@ def main():
         plt.rc("ytick", direction="in", right=True)
         plt.legend(["simulated","fitted"])
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction_one_curves.pdf")
+        plt.savefig("cut_off_reduction_one_curves.pdf")
         plt.show()
         
         val_mono_half = cut_offs[3][0]
@@ -210,7 +204,7 @@ def main():
         plt.rc("ytick", direction="in", right=True)
         plt.legend(["simulated","fitted"])
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction_half.pdf")
+        plt.savefig("cut_off_reduction_half.pdf")
         plt.show()
         
         
@@ -227,7 +221,7 @@ def main():
         plt.rc("ytick", direction="in", right=True)
         plt.legend(["simulated","fitted"])
         plt.tight_layout()
-        plt.savefig(r"J:\PhD resources\Thesis\images\cut_off_reduction_vals.pdf")
+        plt.savefig("cut_off_reduction_vals.pdf")
         plt.show()
         
         
@@ -253,7 +247,7 @@ def main():
         plt.rc("xtick", direction="in", top=True)
         plt.rc("ytick", direction="in", right=True)
         plt.tight_layout();plt.grid()
-        plt.savefig(r"J:\PhD resources\Thesis\images\z_plots.pdf")
+        plt.savefig("z_plots.pdf")
         plt.show()
         
         
@@ -265,7 +259,7 @@ def main():
         plt.rc("ytick", direction="in", right=True)
         plt.plot(Y_values,DOF_poly / DOF_mono,'kd-')
         plt.tight_layout();plt.grid()
-        plt.savefig(r"J:\PhD resources\Thesis\images\DOF_poly.pdf")
+        plt.savefig("DOF_poly.pdf")
         plt.show()
         
         #Plot DOF ratio ^2 vs Y^2
@@ -282,7 +276,7 @@ def main():
         plt.plot((Y_values) ** 2, p[0] * (Y_values) ** 2 + p[1])
         plt.legend(["Simulated","Fitted"])
         plt.tight_layout();plt.grid()
-        plt.savefig(r"J:\PhD resources\Thesis\images\DOF_poly_square.pdf")
+        plt.savefig("DOF_poly_square.pdf")
         plt.show()
         
         
@@ -302,7 +296,7 @@ def main():
         plt.plot((Y_values) ** 2, p[0] * (Y_values) ** 2 + p[1])
         plt.legend(["Simulated","Fitted"])
         plt.tight_layout();plt.grid()
-        plt.savefig(r"J:\PhD resources\Thesis\images\peak_int.pdf")
+        plt.savefig("peak_int.pdf")
         plt.show()
         
         
