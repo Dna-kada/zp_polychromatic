@@ -19,7 +19,7 @@ N = n_zones * resolution_factor # number of samples
 mag = 1050
 
 #the quantity being invsetigated
-Y_values = np.array([0,1., 1.5, 2. , 2.5, 3. , 3.5, 4. ])    
+Y_values = np.array([0, 0.8, 1., 1.25, 1.5, 1.875, 2., 2.5, 3., 3.5, 4., 4.5, 5. ])  
 mod_val = [0.05, 0.1, 0.15] # modulation cut-offs to measure
 
 

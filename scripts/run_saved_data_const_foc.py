@@ -40,35 +40,16 @@ inf_curves = np.array([flat_results_MTF[i][DOF_mid] for i in range(Ys)])
 
 inf_PSF =  np.array([flat_results_PSF[i][DOF_mid] for i in range(Ys)])
 
-# save data
-# np.savez("mtf_data.npz", freq=freq, Y=Y_values,
-         # oof=np.stack(oof_curves), inf=np.stack(inf_curves))
 
 # plotting
 linestyles = ["k-", "k:", "k--", "k-.",(0, (3, 5, 1, 5)), (0, (5, 5)), (0, (3, 5, 1, 5, 1, 5))]
 plot_mtf_curves_flc(freq, oof_curves[sel], Y_values[sel],
-                r"J:\PhD resources\Thesis\images\oof_MTF_const_foc.pdf", linestyles)
+                "oof_MTF_const_foc.pdf", linestyles)
 
 plt.figure()
 plt.plot(freq)
 plot_mtf_curves_flc(freq, inf_curves[sel], Y_values[sel],
-                r"J:\PhD resources\Thesis\images\MTF_in_focus_const_foc.pdf", linestyles)
-
-# fig, ax = plt.subplots()
-# ax.set_xlabel(r"$f/f_{\mathrm{c}}$")
-# ax.set_ylabel("modulation")
-# # ax.set_xlim(0, 2.2)
-
-# i = 0
-# for curve, ls in zip(inf_curves[sel], linestyles):
-#     ax.plot(freq*Y_values[sel[i]], curve, ls,markersize= 4)
-#     i += 1
-# labels = [f"{y:.2f}" for y in Y_values]
-# ax.legend(labels, title="Y values", loc="upper right")
-# ax.grid(True)
-# fig.tight_layout()
-# # plt.show()
-# fig.savefig(r"J:\PhD resources\Thesis\images\MTF_in_focus_y_xscale_const_foc.pdf")
+                "MTF_in_focus_const_foc.pdf", linestyles)
 
 
 
@@ -86,14 +67,14 @@ plt.figure()
 plt.plot(Y_values, fco / fco_m)
 for v in [1]:
     plt.plot(Y_values, cut_offs[v] / cut_offs[v][0], linestyles[v], markersize = 5)
-plt.xlabel("Y"); plt.ylabel(r"$f/f_{m}$")
+plt.xlabel("Y"); plt.ylabel(r"$\nu/\nu_{m}$")
 # plt.ylim(0.4,1.05); plt.xlim(1,6)
 plt.grid()
 plt.legend(['Monochromatic',"10%"])
 plt.rc("xtick", direction="in", top=True)
 plt.rc("ytick", direction="in", right=True)
 plt.tight_layout()
-plt.savefig(r"J:\PhD resources\Thesis\images\const_r_demonstration_const_foc.pdf")
+plt.savefig("const_r_demonstration_const_foc.pdf")
 # plt.show()
 
 
@@ -106,28 +87,10 @@ mono_curve = Y_values# * val_mono
 
 labels = ['monochromatic', 'polychromatic']
 plot_fractions(Y_values, 
-               [cut_offs[1] / cut_offs[1][1]],
-               r"$f/f_{m}$",
+               [cut_offs[1] / cut_offs[1][7]],
+               r"$\nu/\nu_{Y = 3.3}$",
                [],
-               r"J:\PhD resources\Thesis\images\cut_off_reduction_const_foc.pdf",
-               linestyles[:2])
-plot_fractions(Y_values**2, 
-               [(cut_offs[0] / val_mono) ** 2],
-               r"$(f/f_{m})^2$",
-               [],
-               r"J:\PhD resources\Thesis\images\cut_off_reduction_line_const_foc.pdf",
-               linestyles[:2])
-plot_fractions((Y_values) ** 2, 
-               [(val_mono / cut_offs[0]) ** 2, (val_mono / cut_offs[1]) ** 2,(val_mono / cut_offs[2]) ** 2],
-               r"$f_{m}/f$",
-               [],
-               r"J:\PhD resources\Thesis\images\cut_off_reduction_few_curves_const_foc.pdf",
-               linestyles[:2])
-plot_fractions((Y_values)**2, 
-               [(val_mono / cut_offs[1]) ** 2],
-               r"$f_{m}/f$",
-               [],
-               r"J:\PhD resources\Thesis\images\cut_off_reduction_few_curves_const_foc.pdf",
+               "cut_off_reduction_const_foc.pdf",
                linestyles[:2])
 
 #%%
@@ -158,29 +121,27 @@ pc = np.array(peaks_cen)
 plt.figure()
 for i in range(Ys):
     plt.plot(peaks_tot[i]/np.max(peaks_tot[i]))
-plt.plot(np.arange(0, 17), np.exp(-(np.arange(0, 17) - 8) ** 2 / 2*(1 / 2.75)**2))
-plt.plot(np.arange(0, 17), np.exp(-(np.arange(0, 17) - 8) ** 2 / 2 * (2.75) ** 2))
 plt.xlabel("z"); plt.ylabel("intensity")
 plt.rc("xtick", direction="in", top=True)
 plt.rc("ytick", direction="in", right=True)
 plt.tight_layout()
-plt.savefig("z_plots_const_foc.png")
+plt.savefig("z_plots_const_foc.pdf")
 
 plt.figure()
 plt.xlabel(r"$Y^2$")
-plt.ylabel(r"$(\frac{DOF_{p}}{DOF_{m}})^2$")
+plt.ylabel(r"$(\frac{\Delta z_{p}}{\Delta z_{m}})^2$")
 plt.plot(Y_values ** 2, (DOF_poly / DOF_mono) ** 2,'k') 
 plt.grid()
 plt.rc("xtick", direction="in", top=True)
 plt.rc("ytick", direction="in", right=True)
 plt.tight_layout()
-plt.savefig(r"J:\PhD resources\Thesis\images\DOF_poly_square_const_foc.pdf")
+plt.savefig("DOF_poly_square_const_foc.pdf")
 
 plot_fractions(Y_values, 
                [DOF_poly / (focal_length / ( 3.52 * zeta))],
-               r"$\frac{DOF_p}{f/(3.52 \, \zeta)}$",
+               r"$\frac{\Delta z_p}{f/(3.52 \, \zeta)}$",
                [],
-               r"J:\PhD resources\Thesis\images\DOF_poly_const_foc.pdf",
+               "DOF_poly_const_foc.pdf",
                linestyles[:2])
 
 
@@ -190,7 +151,7 @@ plt.rc("xtick", direction="in", top=True)
 plt.rc("ytick", direction="in", right=True)
 plt.plot(Y_values ** 2, pc[0] / pc)
 plt.tight_layout()
-plt.savefig(r"J:\PhD resources\Thesis\images\peak_int_const_foc_norm.pdf")
+plt.savefig("peak_int_const_foc_norm.pdf")
 
 plt.figure()
 plt.xlabel(r"$Y^2$"); plt.ylabel(r"$\left(\frac{I_m}{I_p}\right)^2$")
@@ -198,7 +159,7 @@ plt.rc("xtick", direction="in", top=True)
 plt.rc("ytick", direction="in", right=True)
 plt.plot(Y_values ** 2, pc[0] ** 2 / pc ** 2)
 plt.tight_layout()
-plt.savefig(r"J:\PhD resources\Thesis\images\peak_int_const_square_foc_norm.pdf")
+plt.savefig("peak_int_const_square_foc_norm.pdf")
 
 
 
@@ -208,5 +169,5 @@ plt.rc("xtick", direction="in", top=True)
 plt.rc("ytick", direction="in", right=True)
 plt.plot(Y_values, pc * focal_length / zeta, 'kd-')
 plt.tight_layout(); plt.grid()
-plt.savefig(r"J:\PhD resources\Thesis\images\peak_int_const_foc.pdf")
+plt.savefig("peak_int_const_foc.pdf")
 plt.show()
